@@ -1,116 +1,235 @@
+
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FEAST RUN Dashboard</title>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <style>
-    * { box-sizing: border-box; }
-    body {
-      margin: 0; min-height: 100vh;
-      display: grid; place-items: center;
-      background: #f3eee5; color: #292521;
-      font-family: Arial, sans-serif; padding: 20px;
-    }
-    .panel {
-      width: 100%; max-width: 390px;
-      background: #fff; padding: 30px;
-      border-radius: 16px;
-      box-shadow: 0 8px 30px #00000012;
-    }
-    h1 { margin: 0 0 8px; color: #a52d2d; }
-    p { color: #777; }
-    input, button {
-      width: 100%; padding: 13px;
-      margin-top: 12px; border-radius: 8px;
-      font-size: 15px;
-    }
-    input { border: 1px solid #ddd; }
-    button {
-      border: 0; background: #a52d2d;
-      color: white; font-weight: bold;
-    }
-    #message { font-size: 14px; margin-top: 15px; }
-    #dashboard { display: none; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FEAST RUN Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#f3eee5;color:#292521;font-family:Arial,sans-serif}
+header{background:#a52d2d;color:white;padding:20px}
+header h1{margin:0;font-size:23px}
+header p{margin:6px 0 0;font-size:13px}
+main{max-width:1100px;margin:auto;padding:20px}
+.top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+button,select,input{padding:11px;border-radius:8px;border:1px solid #ddd;font-size:14px}
+button{background:#a52d2d;color:white;border:0;cursor:pointer}
+.logout{background:#fff;color:#a52d2d}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:12px;margin:20px 0}
+.card{background:white;padding:17px;border-radius:12px}
+.card p{margin:0;color:#777;font-size:13px}
+.card h2{margin:9px 0 0;font-size:27px}
+.section{background:white;padding:17px;border-radius:12px;margin-top:18px}
+.controls{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}
+.controls input{flex:1;min-width:180px}
+.tablewrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;white-space:nowrap;font-size:13px}
+th,td{text-align:left;padding:12px;border-bottom:1px solid #eee}
+th{background:#faf7f2}
+#message{margin-top:12px;color:#a52d2d;font-size:14px}
+.muted{color:#777;font-size:13px}
+</style>
 </head>
 <body>
-  <div class="panel" id="login">
-    <h1>FEAST RUN</h1>
-    <p>Dashboard administrasi dan pembayaran</p>
-    <input id="email" type="email" placeholder="Email">
-    <input id="password" type="password" placeholder="Password">
-    <button onclick="loginUser()">LOGIN</button>
+
+<header>
+  <h1>FEAST RUN</h1>
+  <p>Dashboard Administrasi</p>
+</header>
+
+<main>
+  <div class="top">
+    <div>
+      <strong id="welcome">Memuat akun...</strong>
+      <div class="muted" id="role"></div>
+    </div>
+    <div>
+      <button onclick="loadData()">Refresh Data</button>
+      <button class="logout" onclick="logoutUser()">Logout</button>
+    </div>
+  </div>
+
+  <div class="cards">
+    <div class="card"><p>Total Peserta</p><h2 id="total">0</h2></div>
+    <div class="card"><p>Belum Bayar</p><h2 id="unpaid">0</h2></div>
+    <div class="card"><p>Menunggu Verifikasi</p><h2 id="pending">0</h2></div>
+    <div class="card"><p>Lunas</p><h2 id="paid">0</h2></div>
+  </div>
+
+  <div class="section">
+    <h3>Data Peserta</h3>
+    <div class="controls">
+      <input id="search" placeholder="Cari nama atau ID peserta..." oninput="renderParticipants()">
+      <select id="classFilter" onchange="renderParticipants()">
+        <option value="">Semua Kelas</option>
+        <option>X-A</option><option>X-B</option><option>X-C</option>
+        <option>XI-A</option><option>XI-B</option>
+        <option>XII-A</option><option>XII-B</option>
+      </select>
+    </div>
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr>
+            <th>ID Peserta</th>
+            <th>Nama</th>
+            <th>Kelas</th>
+            <th>WhatsApp</th>
+            <th>Ukuran</th>
+            <th>Lengan</th>
+            <th>Pembayaran</th>
+          </tr>
+        </thead>
+        <tbody id="participantRows">
+          <tr><td colspan="7">Memuat data...</td></tr>
+        </tbody>
+      </table>
+    </div>
     <div id="message"></div>
   </div>
 
-  <div class="panel" id="dashboard">
-    <h1>FEAST RUN</h1>
-    <p id="welcome"></p>
-    <p id="role"></p>
-    <p>Login berhasil. Koneksi database aktif.</p>
-    <button onclick="logoutUser()">LOGOUT</button>
+  <div class="section">
+    <h3>Rekap Jersey</h3>
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr><th>Ukuran</th><th>Lengan Pendek</th><th>Lengan Panjang</th><th>Total</th></tr>
+        </thead>
+        <tbody id="jerseyRows"></tbody>
+      </table>
+    </div>
   </div>
+</main>
 
-  <script>
-    const SUPABASE_URL = "https://zmubmnprzohtxxzukacg.supabase.co";
-    const SUPABASE_KEY = "sb_publishable_uYcFb90dqa8NJIUE70TAZg_11h9bBlg";
+<script>
+const SUPABASE_URL = "https://zmubmnprzohtxxzukacg.supabase.co";
+const SUPABASE_KEY = "sb_publishable_uYcFb90dqa8NJIUE70TAZg_11h9bBlg";
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    const db = window.supabase.createClient(
-      SUPABASE_URL,
-      SUPABASE_KEY
-    );
+let participants = [];
 
-    async function loginUser() {
-      const email = document.getElementById("email").value.trim();
-      const password = document.getElementById("password").value;
-      const message = document.getElementById("message");
+function safe(value) {
+  return String(value ?? "").replace(/[&<>"']/g, c => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+  })[c]);
+}
 
-      message.textContent = "Memeriksa akun...";
+async function startApp() {
+  const {data:{session}} = await db.auth.getSession();
 
-      const { data, error } = await db.auth.signInWithPassword({
-        email, password
-      });
+  if (!session) {
+    location.href = location.pathname;
+    document.body.innerHTML = "<main><div class='section'><h2>Silakan login kembali.</h2><p>Buka halaman login FEAST RUN.</p></div></main>";
+    return;
+  }
 
-      if (error) {
-        message.textContent = "Login gagal: " + error.message;
-        return;
-      }
+  const {data:profile,error} = await db
+    .from("profiles")
+    .select("full_name,role")
+    .eq("id",session.user.id)
+    .single();
 
-      await showDashboard(data.user);
-    }
+  if(error || !profile || !["admin","petugas"].includes(profile.role)) {
+    document.body.innerHTML = "<main><div class='section'><h2>Akses ditolak</h2><p>Akun belum memiliki izin.</p></div></main>";
+    return;
+  }
 
-    async function showDashboard(user) {
-      const { data: profile, error } = await db
-        .from("profiles")
-        .select("full_name, role")
-        .eq("id", user.id)
-        .single();
+  document.getElementById("welcome").textContent =
+    "Halo, " + (profile.full_name || "Pengguna");
+  document.getElementById("role").textContent =
+    "Role: " + profile.role;
 
-      if (error || !profile || !["admin", "petugas"].includes(profile.role)) {
-        await db.auth.signOut();
-        document.getElementById("message").textContent =
-          "Akun belum memiliki akses. Hubungi admin.";
-        return;
-      }
+  await loadData();
+}
 
-      document.getElementById("login").style.display = "none";
-      document.getElementById("dashboard").style.display = "block";
-      document.getElementById("welcome").textContent =
-        "Halo, " + profile.full_name;
-      document.getElementById("role").textContent =
-        "Role: " + profile.role;
-    }
+async function loadData() {
+  const message = document.getElementById("message");
+  message.textContent = "Mengambil data peserta...";
 
-    async function logoutUser() {
-      await db.auth.signOut();
-      location.reload();
-    }
+  const {data,error} = await db
+    .from("participants")
+    .select("*")
+    .order("created_at",{ascending:false});
 
-    db.auth.getSession().then(({ data }) => {
-      if (data.session) showDashboard(data.session.user);
-    });
-  </script>
+  if(error) {
+    message.textContent = "Gagal mengambil data: " + error.message;
+    document.getElementById("participantRows").innerHTML =
+      "<tr><td colspan='7'>Data gagal dimuat.</td></tr>";
+    return;
+  }
+
+  participants = data || [];
+  updateStats();
+  renderParticipants();
+  renderJerseys();
+  message.textContent = "Data berhasil diperbarui.";
+}
+
+function updateStats() {
+  document.getElementById("total").textContent = participants.length;
+  document.getElementById("unpaid").textContent =
+    participants.filter(p => p.payment_status === "Belum Bayar").length;
+  document.getElementById("pending").textContent =
+    participants.filter(p => p.payment_status === "Menunggu Verifikasi").length;
+  document.getElementById("paid").textContent =
+    participants.filter(p => p.payment_status === "Lunas").length;
+}
+
+function renderParticipants() {
+  const keyword = document.getElementById("search").value.toLowerCase();
+  const selectedClass = document.getElementById("classFilter").value;
+
+  const filtered = participants.filter(p => {
+    const matchText =
+      String(p.full_name || "").toLowerCase().includes(keyword) ||
+      String(p.participant_code || "").toLowerCase().includes(keyword);
+    const matchClass = !selectedClass || p.class_name === selectedClass;
+    return matchText && matchClass;
+  });
+
+  const rows = document.getElementById("participantRows");
+
+  if(!filtered.length) {
+    rows.innerHTML = "<tr><td colspan='7'>Belum ada data peserta.</td></tr>";
+    return;
+  }
+
+  rows.innerHTML = filtered.map(p => `
+    <tr>
+      <td>${safe(p.participant_code)}</td>
+      <td>${safe(p.full_name)}</td>
+      <td>${safe(p.class_name)}</td>
+      <td>${safe(p.whatsapp)}</td>
+      <td>${safe(p.jersey_size)}</td>
+      <td>${safe(p.sleeve_type)}</td>
+      <td>${safe(p.payment_status)}</td>
+    </tr>
+  `).join("");
+}
+
+function renderJerseys() {
+  const sizes = ["XS","S","M","L","XL","XXL","XXXL"];
+  document.getElementById("jerseyRows").innerHTML = sizes.map(size => {
+    const short = participants.filter(p =>
+      p.jersey_size === size && p.sleeve_type === "Pendek").length;
+    const long = participants.filter(p =>
+      p.jersey_size === size && p.sleeve_type === "Panjang").length;
+
+    return `<tr>
+      <td>${size}</td><td>${short}</td><td>${long}</td>
+      <td>${short + long}</td>
+    </tr>`;
+  }).join("");
+}
+
+async function logoutUser() {
+  await db.auth.signOut();
+  location.reload();
+}
+
+startApp();
+</script>
 </body>
 </html>
