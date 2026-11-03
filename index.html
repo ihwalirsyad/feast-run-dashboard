@@ -1,232 +1,269 @@
-
 <!DOCTYPE html>
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>FEAST RUN Dashboard</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{box-sizing:border-box}
 body{margin:0;background:#f3eee5;color:#292521;font-family:Arial,sans-serif}
 header{background:#a52d2d;color:white;padding:20px}
-header h1{margin:0;font-size:23px}
-header p{margin:6px 0 0;font-size:13px}
-main{max-width:1100px;margin:auto;padding:20px}
+header h1{margin:0}
+main{max-width:1100px;margin:auto;padding:18px}
 .top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
-button,select,input{padding:11px;border-radius:8px;border:1px solid #ddd;font-size:14px}
-button{background:#a52d2d;color:white;border:0;cursor:pointer}
-.logout{background:#fff;color:#a52d2d}
-.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:12px;margin:20px 0}
-.card{background:white;padding:17px;border-radius:12px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:12px;margin:18px 0}
+.card,.section{background:white;padding:16px;border-radius:12px;margin-bottom:16px}
 .card p{margin:0;color:#777;font-size:13px}
-.card h2{margin:9px 0 0;font-size:27px}
-.section{background:white;padding:17px;border-radius:12px;margin-top:18px}
-.controls{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}
+.card h2{margin:8px 0 0;font-size:26px}
+input,select,button{padding:11px;border:1px solid #ddd;border-radius:8px;font-size:14px}
+input,select{width:100%;background:white}
+button{background:#a52d2d;color:white;border:0;cursor:pointer}
+.secondary{background:#eee;color:#333}
+.logout{background:white;color:#a52d2d}
+.controls,.actions{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
 .controls input{flex:1;min-width:180px}
+.formgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.field label{display:block;font-size:13px;margin-bottom:6px;color:#555}
 .tablewrap{overflow-x:auto}
 table{width:100%;border-collapse:collapse;white-space:nowrap;font-size:13px}
-th,td{text-align:left;padding:12px;border-bottom:1px solid #eee}
+th,td{text-align:left;padding:11px;border-bottom:1px solid #eee}
 th{background:#faf7f2}
-#message{margin-top:12px;color:#a52d2d;font-size:14px}
+#formSection{display:none}
+#message,#formMessage{font-size:13px;color:#a52d2d;margin-top:10px}
 .muted{color:#777;font-size:13px}
 </style>
 </head>
 <body>
-
 <header>
-  <h1>FEAST RUN</h1>
-  <p>Dashboard Administrasi</p>
+<h1>FEAST RUN</h1>
+<p>Dashboard Administrasi</p>
 </header>
-
 <main>
-  <div class="top">
-    <div>
-      <strong id="welcome">Memuat akun...</strong>
-      <div class="muted" id="role"></div>
-    </div>
-    <div>
-      <button onclick="loadData()">Refresh Data</button>
-      <button class="logout" onclick="logoutUser()">Logout</button>
-    </div>
-  </div>
+<div class="top">
+<div><strong id="welcome">Memuat...</strong><div id="role" class="muted"></div></div>
+<button class="logout" onclick="logoutUser()">Logout</button>
+</div>
 
-  <div class="cards">
-    <div class="card"><p>Total Peserta</p><h2 id="total">0</h2></div>
-    <div class="card"><p>Belum Bayar</p><h2 id="unpaid">0</h2></div>
-    <div class="card"><p>Menunggu Verifikasi</p><h2 id="pending">0</h2></div>
-    <div class="card"><p>Lunas</p><h2 id="paid">0</h2></div>
-  </div>
+<div class="cards">
+<div class="card"><p>Total Peserta</p><h2 id="total">0</h2></div>
+<div class="card"><p>Belum Bayar</p><h2 id="unpaid">0</h2></div>
+<div class="card"><p>Menunggu Verifikasi</p><h2 id="pending">0</h2></div>
+<div class="card"><p>Lunas</p><h2 id="paid">0</h2></div>
+</div>
 
-  <div class="section">
-    <h3>Data Peserta</h3>
-    <div class="controls">
-      <input id="search" placeholder="Cari nama atau ID peserta..." oninput="renderParticipants()">
-      <select id="classFilter" onchange="renderParticipants()">
-        <option value="">Semua Kelas</option>
-        <option>X-A</option><option>X-B</option><option>X-C</option>
-        <option>XI-A</option><option>XI-B</option>
-        <option>XII-A</option><option>XII-B</option>
-      </select>
-    </div>
-    <div class="tablewrap">
-      <table>
-        <thead>
-          <tr>
-            <th>ID Peserta</th>
-            <th>Nama</th>
-            <th>Kelas</th>
-            <th>WhatsApp</th>
-            <th>Ukuran</th>
-            <th>Lengan</th>
-            <th>Pembayaran</th>
-          </tr>
-        </thead>
-        <tbody id="participantRows">
-          <tr><td colspan="7">Memuat data...</td></tr>
-        </tbody>
-      </table>
-    </div>
-    <div id="message"></div>
-  </div>
+<section class="section">
+<div class="top">
+<h3>Manajemen Peserta</h3>
+<button onclick="openForm()">+ Tambah Peserta</button>
+</div>
 
-  <div class="section">
-    <h3>Rekap Jersey</h3>
-    <div class="tablewrap">
-      <table>
-        <thead>
-          <tr><th>Ukuran</th><th>Lengan Pendek</th><th>Lengan Panjang</th><th>Total</th></tr>
-        </thead>
-        <tbody id="jerseyRows"></tbody>
-      </table>
-    </div>
-  </div>
+<div id="formSection">
+<hr>
+<h3 id="formTitle">Tambah Peserta</h3>
+<div class="formgrid">
+<div class="field"><label>Nama Lengkap</label><input id="fullName" placeholder="Nama peserta"></div>
+<div class="field"><label>Kelas</label>
+<select id="className">
+<option value="">Pilih kelas</option>
+<option>X-A</option><option>X-B</option><option>X-C</option>
+<option>XI-A</option><option>XI-B</option><option>XII-A</option><option>XII-B</option>
+</select></div>
+<div class="field"><label>Nomor WhatsApp</label><input id="whatsapp" type="tel" placeholder="08xxxxxxxxxx"></div>
+<div class="field"><label>Ukuran Jersey</label>
+<select id="jerseySize">
+<option value="">Pilih ukuran</option>
+<option>XS</option><option>S</option><option>M</option><option>L</option><option>XL</option><option>XXL</option><option>XXXL</option>
+</select></div>
+<div class="field"><label>Jenis Lengan</label>
+<select id="sleeveType">
+<option value="">Pilih jenis lengan</option>
+<option value="Pendek">Pendek</option>
+<option value="Panjang">Panjang</option>
+</select></div>
+<div class="field"><label>Keikutsertaan Fun Run</label>
+<select id="joinsRun"><option value="true">Ikut</option><option value="false">Tidak ikut</option></select>
+</div>
+</div>
+<div class="actions">
+<button onclick="saveParticipant()">Simpan Peserta</button>
+<button class="secondary" onclick="closeForm()">Batal</button>
+</div>
+<div id="formMessage"></div>
+<hr>
+</div>
+
+<div class="controls">
+<input id="search" placeholder="Cari nama atau ID..." oninput="renderParticipants()">
+<select id="classFilter" onchange="renderParticipants()" style="width:auto">
+<option value="">Semua Kelas</option>
+<option>X-A</option><option>X-B</option><option>X-C</option>
+<option>XI-A</option><option>XI-B</option><option>XII-A</option><option>XII-B</option>
+</select>
+<button class="secondary" onclick="loadData()">Refresh</button>
+</div>
+
+<div class="tablewrap">
+<table>
+<thead><tr>
+<th>ID</th><th>Nama</th><th>Kelas</th><th>WhatsApp</th>
+<th>Ukuran</th><th>Lengan</th><th>Fun Run</th><th>Pembayaran</th><th>Aksi</th>
+</tr></thead>
+<tbody id="participantRows"><tr><td colspan="9">Memuat...</td></tr></tbody>
+</table>
+</div>
+<div id="message"></div>
+</section>
+
+<section class="section">
+<h3>Rekap Jersey</h3>
+<div class="tablewrap"><table>
+<thead><tr><th>Ukuran</th><th>Pendek</th><th>Panjang</th><th>Total</th></tr></thead>
+<tbody id="jerseyRows"></tbody>
+</table></div>
+</section>
 </main>
 
 <script>
-const SUPABASE_URL = "https://zmubmnprzohtxxzukacg.supabase.co";
-const SUPABASE_KEY = "sb_publishable_uYcFb90dqa8NJIUE70TAZg_11h9bBlg";
-const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const URL="https://zmubmnprzohtxxzukacg.supabase.co";
+const KEY="sb_publishable_uYcFb90dqa8NJIUE70TAZg_11h9bBlg";
+const db=window.supabase.createClient(URL,KEY);
+let participants=[];
+let currentRole="";
+let editingId=null;
 
-let participants = [];
-
-function safe(value) {
-  return String(value ?? "").replace(/[&<>"']/g, c => ({
-    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
-  })[c]);
+function safe(v){
+return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 }
 
-async function startApp() {
-  const {data:{session}} = await db.auth.getSession();
-
-  if (!session) {
-    location.href = location.pathname;
-    document.body.innerHTML = "<main><div class='section'><h2>Silakan login kembali.</h2><p>Buka halaman login FEAST RUN.</p></div></main>";
-    return;
-  }
-
-  const {data:profile,error} = await db
-    .from("profiles")
-    .select("full_name,role")
-    .eq("id",session.user.id)
-    .single();
-
-  if(error || !profile || !["admin","petugas"].includes(profile.role)) {
-    document.body.innerHTML = "<main><div class='section'><h2>Akses ditolak</h2><p>Akun belum memiliki izin.</p></div></main>";
-    return;
-  }
-
-  document.getElementById("welcome").textContent =
-    "Halo, " + (profile.full_name || "Pengguna");
-  document.getElementById("role").textContent =
-    "Role: " + profile.role;
-
-  await loadData();
+async function startApp(){
+const {data:{session}}=await db.auth.getSession();
+if(!session){document.body.innerHTML="<main>Silakan login kembali.</main>";return;}
+const {data:p,error}=await db.from("profiles").select("full_name,role").eq("id",session.user.id).single();
+if(error||!p||!["admin","petugas"].includes(p.role)){document.body.innerHTML="<main>Akses ditolak.</main>";return;}
+currentRole=p.role;
+document.getElementById("welcome").textContent="Halo, "+(p.full_name||"Pengguna");
+document.getElementById("role").textContent="Role: "+p.role;
+await loadData();
 }
 
-async function loadData() {
-  const message = document.getElementById("message");
-  message.textContent = "Mengambil data peserta...";
-
-  const {data,error} = await db
-    .from("participants")
-    .select("*")
-    .order("created_at",{ascending:false});
-
-  if(error) {
-    message.textContent = "Gagal mengambil data: " + error.message;
-    document.getElementById("participantRows").innerHTML =
-      "<tr><td colspan='7'>Data gagal dimuat.</td></tr>";
-    return;
-  }
-
-  participants = data || [];
-  updateStats();
-  renderParticipants();
-  renderJerseys();
-  message.textContent = "Data berhasil diperbarui.";
+async function loadData(){
+const msg=document.getElementById("message");
+msg.textContent="Memuat data...";
+const {data,error}=await db.from("participants").select("*").order("created_at",{ascending:false});
+if(error){msg.textContent="Gagal: "+error.message;return;}
+participants=data||[];
+updateStats();renderParticipants();renderJerseys();
+msg.textContent="Data berhasil diperbarui.";
 }
 
-function updateStats() {
-  document.getElementById("total").textContent = participants.length;
-  document.getElementById("unpaid").textContent =
-    participants.filter(p => p.payment_status === "Belum Bayar").length;
-  document.getElementById("pending").textContent =
-    participants.filter(p => p.payment_status === "Menunggu Verifikasi").length;
-  document.getElementById("paid").textContent =
-    participants.filter(p => p.payment_status === "Lunas").length;
+function updateStats(){
+total.textContent=participants.length;
+unpaid.textContent=participants.filter(p=>p.payment_status==="Belum Bayar").length;
+pending.textContent=participants.filter(p=>p.payment_status==="Menunggu Verifikasi").length;
+paid.textContent=participants.filter(p=>p.payment_status==="Lunas").length;
 }
 
-function renderParticipants() {
-  const keyword = document.getElementById("search").value.toLowerCase();
-  const selectedClass = document.getElementById("classFilter").value;
-
-  const filtered = participants.filter(p => {
-    const matchText =
-      String(p.full_name || "").toLowerCase().includes(keyword) ||
-      String(p.participant_code || "").toLowerCase().includes(keyword);
-    const matchClass = !selectedClass || p.class_name === selectedClass;
-    return matchText && matchClass;
-  });
-
-  const rows = document.getElementById("participantRows");
-
-  if(!filtered.length) {
-    rows.innerHTML = "<tr><td colspan='7'>Belum ada data peserta.</td></tr>";
-    return;
-  }
-
-  rows.innerHTML = filtered.map(p => `
-    <tr>
-      <td>${safe(p.participant_code)}</td>
-      <td>${safe(p.full_name)}</td>
-      <td>${safe(p.class_name)}</td>
-      <td>${safe(p.whatsapp)}</td>
-      <td>${safe(p.jersey_size)}</td>
-      <td>${safe(p.sleeve_type)}</td>
-      <td>${safe(p.payment_status)}</td>
-    </tr>
-  `).join("");
+function renderParticipants(){
+const q=document.getElementById("search").value.toLowerCase();
+const cls=document.getElementById("classFilter").value;
+const rows=participants.filter(p=>
+(!cls||p.class_name===cls)&&
+(String(p.full_name||"").toLowerCase().includes(q)||String(p.participant_code||"").toLowerCase().includes(q))
+);
+const body=document.getElementById("participantRows");
+if(!rows.length){body.innerHTML="<tr><td colspan='9'>Belum ada peserta.</td></tr>";return;}
+body.innerHTML=rows.map(p=>`
+<tr>
+<td>${safe(p.participant_code)}</td><td>${safe(p.full_name)}</td>
+<td>${safe(p.class_name)}</td><td>${safe(p.whatsapp)}</td>
+<td>${safe(p.jersey_size)}</td><td>${safe(p.sleeve_type)}</td>
+<td>${p.joins_run?"Ikut":"Tidak ikut"}</td><td>${safe(p.payment_status)}</td>
+<td><div class="actions">
+<button onclick="editParticipant('${p.id}')">Edit</button>
+${currentRole==="admin"?`<button class="danger" onclick="deleteParticipant('${p.id}')">Hapus</button>`:""}
+</div></td>
+</tr>`).join("");
 }
 
-function renderJerseys() {
-  const sizes = ["XS","S","M","L","XL","XXL","XXXL"];
-  document.getElementById("jerseyRows").innerHTML = sizes.map(size => {
-    const short = participants.filter(p =>
-      p.jersey_size === size && p.sleeve_type === "Pendek").length;
-    const long = participants.filter(p =>
-      p.jersey_size === size && p.sleeve_type === "Panjang").length;
-
-    return `<tr>
-      <td>${size}</td><td>${short}</td><td>${long}</td>
-      <td>${short + long}</td>
-    </tr>`;
-  }).join("");
+function renderJerseys(){
+const sizes=["XS","S","M","L","XL","XXL","XXXL"];
+jerseyRows.innerHTML=sizes.map(s=>{
+const a=participants.filter(p=>p.jersey_size===s&&p.sleeve_type==="Pendek").length;
+const b=participants.filter(p=>p.jersey_size===s&&p.sleeve_type==="Panjang").length;
+return `<tr><td>${s}</td><td>${a}</td><td>${b}</td><td>${a+b}</td></tr>`;
+}).join("");
 }
 
-async function logoutUser() {
-  await db.auth.signOut();
-  location.reload();
+function openForm(){
+editingId=null;
+formTitle.textContent="Tambah Peserta";
+fullName.value="";className.value="";whatsapp.value="";
+jerseySize.value="";sleeveType.value="";joinsRun.value="true";
+formMessage.textContent="";
+formSection.style.display="block";
+}
+
+function closeForm(){formSection.style.display="none";}
+
+function editParticipant(id){
+const p=participants.find(x=>x.id===id);
+if(!p)return;
+if(p.payment_status==="Lunas"&&currentRole!=="admin"){
+alert("Peserta lunas hanya bisa diedit admin.");return;
+}
+editingId=id;
+formTitle.textContent="Edit Peserta";
+fullName.value=p.full_name||"";
+className.value=p.class_name||"";
+whatsapp.value=p.whatsapp||"";
+jerseySize.value=p.jersey_size||"";
+sleeveType.value=p.sleeve_type||"";
+joinsRun.value=String(p.joins_run);
+formMessage.textContent="";
+formSection.style.display="block";
+window.scrollTo({top:0,behavior:"smooth"});
+}
+
+async function saveParticipant(){
+const name=fullName.value.trim();
+const cls=className.value;
+const phone=whatsapp.value.trim();
+const size=jerseySize.value;
+const sleeve=sleeveType.value;
+const run=joinsRun.value==="true";
+const msg=formMessage;
+if(!name||!cls||!phone||!size||!sleeve){msg.textContent="Lengkapi semua data terlebih dahulu.";return;}
+const payload={
+full_name:name,class_name:cls,whatsapp:phone,
+jersey_size:size,sleeve_type:sleeve,joins_run:run
+};
+msg.textContent="Menyimpan...";
+let result;
+if(editingId){
+result=await db.from("participants").update(payload).eq("id",editingId);
+}else{
+payload.payment_status="Belum Bayar";
+payload.payment_method=null;
+result=await db.from("participants").insert(payload);
+}
+if(result.error){msg.textContent="Gagal: "+result.error.message;return;}
+msg.textContent="Berhasil disimpan.";
+closeForm();
+await loadData();
+}
+
+async function deleteParticipant(id){
+if(currentRole!=="admin")return;
+if(!confirm("Yakin ingin menghapus peserta ini?"))return;
+const {error}=await db.from("participants").delete().eq("id",id);
+if(error){alert("Gagal menghapus: "+error.message);return;}
+await loadData();
+}
+
+async function logoutUser(){
+await db.auth.signOut();
+location.reload();
 }
 
 startApp();
