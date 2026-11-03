@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -21,6 +22,7 @@ input,select{width:100%;background:white}
 button{background:#a52d2d;color:white;border:0;cursor:pointer}
 .secondary{background:#eee;color:#333}
 .logout{background:white;color:#a52d2d}
+.danger{background:#7d2020}
 .controls,.actions{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
 .controls input{flex:1;min-width:180px}
 .formgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
@@ -35,13 +37,18 @@ th{background:#faf7f2}
 </style>
 </head>
 <body>
+
 <header>
 <h1>FEAST RUN</h1>
 <p>Dashboard Administrasi</p>
 </header>
+
 <main>
 <div class="top">
-<div><strong id="welcome">Memuat...</strong><div id="role" class="muted"></div></div>
+<div>
+<strong id="welcome">Memuat...</strong>
+<div id="role" class="muted"></div>
+</div>
 <button class="logout" onclick="logoutUser()">Logout</button>
 </div>
 
@@ -61,66 +68,98 @@ th{background:#faf7f2}
 <div id="formSection">
 <hr>
 <h3 id="formTitle">Tambah Peserta</h3>
+
 <div class="formgrid">
-<div class="field"><label>Nama Lengkap</label><input id="fullName" placeholder="Nama peserta"></div>
-<div class="field"><label>Kelas</label>
+<div class="field">
+<label>Nama Lengkap</label>
+<input id="fullName" placeholder="Nama peserta">
+</div>
+
+<div class="field">
+<label>Kelas</label>
 <select id="className">
 <option value="">Pilih kelas</option>
-<option>X-A</option><option>X-B</option><option>X-C</option>
-<option>XI-A</option><option>XI-B</option><option>XII-A</option><option>XII-B</option>
-</select></div>
-<div class="field"><label>Nomor WhatsApp</label><input id="whatsapp" type="tel" placeholder="08xxxxxxxxxx"></div>
-<div class="field"><label>Ukuran Jersey</label>
+</select>
+</div>
+
+<div class="field">
+<label>Nomor WhatsApp</label>
+<input id="whatsapp" type="tel" placeholder="08xxxxxxxxxx">
+</div>
+
+<div class="field">
+<label>Ukuran Jersey</label>
 <select id="jerseySize">
 <option value="">Pilih ukuran</option>
-<option>XS</option><option>S</option><option>M</option><option>L</option><option>XL</option><option>XXL</option><option>XXXL</option>
-</select></div>
-<div class="field"><label>Jenis Lengan</label>
+<option>XS</option><option>S</option><option>M</option>
+<option>L</option><option>XL</option><option>XXL</option><option>XXXL</option>
+</select>
+</div>
+
+<div class="field">
+<label>Jenis Lengan</label>
 <select id="sleeveType">
 <option value="">Pilih jenis lengan</option>
 <option value="Pendek">Pendek</option>
 <option value="Panjang">Panjang</option>
-</select></div>
-<div class="field"><label>Keikutsertaan Fun Run</label>
-<select id="joinsRun"><option value="true">Ikut</option><option value="false">Tidak ikut</option></select>
+</select>
+</div>
+
+<div class="field">
+<label>Keikutsertaan Fun Run</label>
+<select id="joinsRun">
+<option value="true">Ikut</option>
+<option value="false">Tidak ikut</option>
+</select>
 </div>
 </div>
+
 <div class="actions">
 <button onclick="saveParticipant()">Simpan Peserta</button>
 <button class="secondary" onclick="closeForm()">Batal</button>
 </div>
+
 <div id="formMessage"></div>
 <hr>
 </div>
 
 <div class="controls">
 <input id="search" placeholder="Cari nama atau ID..." oninput="renderParticipants()">
+
 <select id="classFilter" onchange="renderParticipants()" style="width:auto">
 <option value="">Semua Kelas</option>
-<option>X-A</option><option>X-B</option><option>X-C</option>
-<option>XI-A</option><option>XI-B</option><option>XII-A</option><option>XII-B</option>
 </select>
+
 <button class="secondary" onclick="loadData()">Refresh</button>
 </div>
 
 <div class="tablewrap">
 <table>
-<thead><tr>
+<thead>
+<tr>
 <th>ID</th><th>Nama</th><th>Kelas</th><th>WhatsApp</th>
 <th>Ukuran</th><th>Lengan</th><th>Fun Run</th><th>Pembayaran</th><th>Aksi</th>
-</tr></thead>
-<tbody id="participantRows"><tr><td colspan="9">Memuat...</td></tr></tbody>
+</tr>
+</thead>
+<tbody id="participantRows">
+<tr><td colspan="9">Memuat...</td></tr>
+</tbody>
 </table>
 </div>
+
 <div id="message"></div>
 </section>
 
 <section class="section">
 <h3>Rekap Jersey</h3>
-<div class="tablewrap"><table>
-<thead><tr><th>Ukuran</th><th>Pendek</th><th>Panjang</th><th>Total</th></tr></thead>
+<div class="tablewrap">
+<table>
+<thead>
+<tr><th>Ukuran</th><th>Pendek</th><th>Panjang</th><th>Total</th></tr>
+</thead>
 <tbody id="jerseyRows"></tbody>
-</table></div>
+</table>
+</div>
 </section>
 </main>
 
@@ -128,145 +167,308 @@ th{background:#faf7f2}
 const URL="https://zmubmnprzohtxxzukacg.supabase.co";
 const KEY="sb_publishable_uYcFb90dqa8NJIUE70TAZg_11h9bBlg";
 const db=window.supabase.createClient(URL,KEY);
+
+// Ambil elemen HTML secara eksplisit
+const $ = id => document.getElementById(id);
+
 let participants=[];
 let currentRole="";
 let editingId=null;
 
+// Daftar kelas FEAST RUN
+const classes=[];
+
+["X","XI"].forEach(level=>{
+  "ABCDEFGHIJ".split("").forEach(letter=>{
+    classes.push(level+"-"+letter);
+  });
+});
+
+"ABCDEFGHI".split("").forEach(letter=>{
+  classes.push("XII-"+letter);
+});
+
+function populateClasses(){
+  $("className").innerHTML =
+    '<option value="">Pilih kelas</option>' +
+    classes.map(c=>`<option value="${c}">${c}</option>`).join("");
+
+  $("classFilter").innerHTML =
+    '<option value="">Semua Kelas</option>' +
+    classes.map(c=>`<option value="${c}">${c}</option>`).join("");
+}
+
 function safe(v){
-return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  return String(v??"").replace(/[&<>"']/g,c=>({
+    "&":"&amp;",
+    "<":"&lt;",
+    ">":"&gt;",
+    '"':"&quot;",
+    "'":"&#39;"
+  }[c]));
 }
 
 async function startApp(){
-const {data:{session}}=await db.auth.getSession();
-if(!session){document.body.innerHTML="<main>Silakan login kembali.</main>";return;}
-const {data:p,error}=await db.from("profiles").select("full_name,role").eq("id",session.user.id).single();
-if(error||!p||!["admin","petugas"].includes(p.role)){document.body.innerHTML="<main>Akses ditolak.</main>";return;}
-currentRole=p.role;
-document.getElementById("welcome").textContent="Halo, "+(p.full_name||"Pengguna");
-document.getElementById("role").textContent="Role: "+p.role;
-await loadData();
+  populateClasses();
+
+  const {data:{session}}=await db.auth.getSession();
+
+  if(!session){
+    document.body.innerHTML="<main>Silakan login kembali.</main>";
+    return;
+  }
+
+  const {data:p,error}=await db
+    .from("profiles")
+    .select("full_name,role")
+    .eq("id",session.user.id)
+    .single();
+
+  if(error||!p||!["admin","petugas"].includes(p.role)){
+    document.body.innerHTML="<main>Akses ditolak.</main>";
+    return;
+  }
+
+  currentRole=p.role;
+
+  $("welcome").textContent="Halo, "+(p.full_name||"Pengguna");
+  $("role").textContent="Role: "+p.role;
+
+  await loadData();
 }
 
 async function loadData(){
-const msg=document.getElementById("message");
-msg.textContent="Memuat data...";
-const {data,error}=await db.from("participants").select("*").order("created_at",{ascending:false});
-if(error){msg.textContent="Gagal: "+error.message;return;}
-participants=data||[];
-updateStats();renderParticipants();renderJerseys();
-msg.textContent="Data berhasil diperbarui.";
+  $("message").textContent="Memuat data...";
+
+  const {data,error}=await db
+    .from("participants")
+    .select("*")
+    .order("created_at",{ascending:false});
+
+  if(error){
+    $("message").textContent="Gagal: "+error.message;
+    return;
+  }
+
+  participants=data||[];
+
+  updateStats();
+  renderParticipants();
+  renderJerseys();
+
+  $("message").textContent="Data berhasil diperbarui.";
 }
 
 function updateStats(){
-total.textContent=participants.length;
-unpaid.textContent=participants.filter(p=>p.payment_status==="Belum Bayar").length;
-pending.textContent=participants.filter(p=>p.payment_status==="Menunggu Verifikasi").length;
-paid.textContent=participants.filter(p=>p.payment_status==="Lunas").length;
+  $("total").textContent=participants.length;
+
+  $("unpaid").textContent=participants.filter(
+    p=>p.payment_status==="Belum Bayar"
+  ).length;
+
+  $("pending").textContent=participants.filter(
+    p=>p.payment_status==="Menunggu Verifikasi"
+  ).length;
+
+  $("paid").textContent=participants.filter(
+    p=>p.payment_status==="Lunas"
+  ).length;
 }
 
 function renderParticipants(){
-const q=document.getElementById("search").value.toLowerCase();
-const cls=document.getElementById("classFilter").value;
-const rows=participants.filter(p=>
-(!cls||p.class_name===cls)&&
-(String(p.full_name||"").toLowerCase().includes(q)||String(p.participant_code||"").toLowerCase().includes(q))
-);
-const body=document.getElementById("participantRows");
-if(!rows.length){body.innerHTML="<tr><td colspan='9'>Belum ada peserta.</td></tr>";return;}
-body.innerHTML=rows.map(p=>`
-<tr>
-<td>${safe(p.participant_code)}</td><td>${safe(p.full_name)}</td>
-<td>${safe(p.class_name)}</td><td>${safe(p.whatsapp)}</td>
-<td>${safe(p.jersey_size)}</td><td>${safe(p.sleeve_type)}</td>
-<td>${p.joins_run?"Ikut":"Tidak ikut"}</td><td>${safe(p.payment_status)}</td>
-<td><div class="actions">
-<button onclick="editParticipant('${p.id}')">Edit</button>
-${currentRole==="admin"?`<button class="danger" onclick="deleteParticipant('${p.id}')">Hapus</button>`:""}
-</div></td>
-</tr>`).join("");
+  const q=$("search").value.toLowerCase();
+  const cls=$("classFilter").value;
+
+  const rows=participants.filter(p=>
+    (!cls||p.class_name===cls)&&
+    (
+      String(p.full_name||"").toLowerCase().includes(q)||
+      String(p.participant_code||"").toLowerCase().includes(q)
+    )
+  );
+
+  const body=$("participantRows");
+
+  if(!rows.length){
+    body.innerHTML="<tr><td colspan='9'>Belum ada peserta.</td></tr>";
+    return;
+  }
+
+  body.innerHTML=rows.map(p=>`
+    <tr>
+      <td>${safe(p.participant_code)}</td>
+      <td>${safe(p.full_name)}</td>
+      <td>${safe(p.class_name)}</td>
+      <td>${safe(p.whatsapp)}</td>
+      <td>${safe(p.jersey_size)}</td>
+      <td>${safe(p.sleeve_type)}</td>
+      <td>${p.joins_run?"Ikut":"Tidak ikut"}</td>
+      <td>${safe(p.payment_status)}</td>
+      <td>
+        <div class="actions">
+          <button onclick="editParticipant('${p.id}')">Edit</button>
+          ${currentRole==="admin"
+            ? `<button class="danger" onclick="deleteParticipant('${p.id}')">Hapus</button>`
+            : ""}
+        </div>
+      </td>
+    </tr>
+  `).join("");
 }
 
 function renderJerseys(){
-const sizes=["XS","S","M","L","XL","XXL","XXXL"];
-jerseyRows.innerHTML=sizes.map(s=>{
-const a=participants.filter(p=>p.jersey_size===s&&p.sleeve_type==="Pendek").length;
-const b=participants.filter(p=>p.jersey_size===s&&p.sleeve_type==="Panjang").length;
-return `<tr><td>${s}</td><td>${a}</td><td>${b}</td><td>${a+b}</td></tr>`;
-}).join("");
+  const sizes=["XS","S","M","L","XL","XXL","XXXL"];
+
+  $("jerseyRows").innerHTML=sizes.map(s=>{
+    const a=participants.filter(
+      p=>p.jersey_size===s&&p.sleeve_type==="Pendek"
+    ).length;
+
+    const b=participants.filter(
+      p=>p.jersey_size===s&&p.sleeve_type==="Panjang"
+    ).length;
+
+    return `
+      <tr>
+        <td>${s}</td>
+        <td>${a}</td>
+        <td>${b}</td>
+        <td>${a+b}</td>
+      </tr>
+    `;
+  }).join("");
 }
 
 function openForm(){
-editingId=null;
-formTitle.textContent="Tambah Peserta";
-fullName.value="";className.value="";whatsapp.value="";
-jerseySize.value="";sleeveType.value="";joinsRun.value="true";
-formMessage.textContent="";
-formSection.style.display="block";
+  editingId=null;
+
+  $("formTitle").textContent="Tambah Peserta";
+  $("fullName").value="";
+  $("className").value="";
+  $("whatsapp").value="";
+  $("jerseySize").value="";
+  $("sleeveType").value="";
+  $("joinsRun").value="true";
+  $("formMessage").textContent="";
+
+  $("formSection").style.display="block";
+
+  $("formSection").scrollIntoView({
+    behavior:"smooth",
+    block:"start"
+  });
 }
 
-function closeForm(){formSection.style.display="none";}
+function closeForm(){
+  $("formSection").style.display="none";
+  editingId=null;
+}
 
 function editParticipant(id){
-const p=participants.find(x=>x.id===id);
-if(!p)return;
-if(p.payment_status==="Lunas"&&currentRole!=="admin"){
-alert("Peserta lunas hanya bisa diedit admin.");return;
-}
-editingId=id;
-formTitle.textContent="Edit Peserta";
-fullName.value=p.full_name||"";
-className.value=p.class_name||"";
-whatsapp.value=p.whatsapp||"";
-jerseySize.value=p.jersey_size||"";
-sleeveType.value=p.sleeve_type||"";
-joinsRun.value=String(p.joins_run);
-formMessage.textContent="";
-formSection.style.display="block";
-window.scrollTo({top:0,behavior:"smooth"});
+  const p=participants.find(x=>x.id===id);
+
+  if(!p)return;
+
+  if(p.payment_status==="Lunas"&&currentRole!=="admin"){
+    alert("Peserta lunas hanya bisa diedit admin.");
+    return;
+  }
+
+  editingId=id;
+
+  $("formTitle").textContent="Edit Peserta";
+  $("fullName").value=p.full_name||"";
+  $("className").value=p.class_name||"";
+  $("whatsapp").value=p.whatsapp||"";
+  $("jerseySize").value=p.jersey_size||"";
+  $("sleeveType").value=p.sleeve_type||"";
+  $("joinsRun").value=String(p.joins_run);
+
+  $("formMessage").textContent="";
+  $("formSection").style.display="block";
+
+  $("formSection").scrollIntoView({
+    behavior:"smooth",
+    block:"start"
+  });
 }
 
 async function saveParticipant(){
-const name=fullName.value.trim();
-const cls=className.value;
-const phone=whatsapp.value.trim();
-const size=jerseySize.value;
-const sleeve=sleeveType.value;
-const run=joinsRun.value==="true";
-const msg=formMessage;
-if(!name||!cls||!phone||!size||!sleeve){msg.textContent="Lengkapi semua data terlebih dahulu.";return;}
-const payload={
-full_name:name,class_name:cls,whatsapp:phone,
-jersey_size:size,sleeve_type:sleeve,joins_run:run
-};
-msg.textContent="Menyimpan...";
-let result;
-if(editingId){
-result=await db.from("participants").update(payload).eq("id",editingId);
-}else{
-payload.payment_status="Belum Bayar";
-payload.payment_method=null;
-result=await db.from("participants").insert(payload);
-}
-if(result.error){msg.textContent="Gagal: "+result.error.message;return;}
-msg.textContent="Berhasil disimpan.";
-closeForm();
-await loadData();
+  const name=$("fullName").value.trim();
+  const cls=$("className").value;
+  const phone=$("whatsapp").value.trim();
+  const size=$("jerseySize").value;
+  const sleeve=$("sleeveType").value;
+  const run=$("joinsRun").value==="true";
+  const msg=$("formMessage");
+
+  if(!name||!cls||!phone||!size||!sleeve){
+    msg.textContent="Lengkapi semua data terlebih dahulu.";
+    return;
+  }
+
+  const payload={
+    full_name:name,
+    class_name:cls,
+    whatsapp:phone,
+    jersey_size:size,
+    sleeve_type:sleeve,
+    joins_run:run
+  };
+
+  msg.textContent="Menyimpan...";
+
+  let result;
+
+  if(editingId){
+    result=await db
+      .from("participants")
+      .update(payload)
+      .eq("id",editingId);
+  }else{
+    payload.payment_status="Belum Bayar";
+    payload.payment_method=null;
+
+    result=await db
+      .from("participants")
+      .insert(payload);
+  }
+
+  if(result.error){
+    msg.textContent="Gagal: "+result.error.message;
+    return;
+  }
+
+  msg.textContent="Berhasil disimpan.";
+  closeForm();
+  await loadData();
 }
 
 async function deleteParticipant(id){
-if(currentRole!=="admin")return;
-if(!confirm("Yakin ingin menghapus peserta ini?"))return;
-const {error}=await db.from("participants").delete().eq("id",id);
-if(error){alert("Gagal menghapus: "+error.message);return;}
-await loadData();
+  if(currentRole!=="admin")return;
+
+  if(!confirm("Yakin ingin menghapus peserta ini?"))return;
+
+  const {error}=await db
+    .from("participants")
+    .delete()
+    .eq("id",id);
+
+  if(error){
+    alert("Gagal menghapus: "+error.message);
+    return;
+  }
+
+  await loadData();
 }
 
 async function logoutUser(){
-await db.auth.signOut();
-location.reload();
+  await db.auth.signOut();
+  location.reload();
 }
 
 startApp();
 </script>
+
 </body>
 </html>
